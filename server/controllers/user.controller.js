@@ -49,7 +49,7 @@ const register = async (req,res, next) => {
     })
 };
 
-const login = async (req,res) => {
+const login = async (req,res,next) => {
     const { email,password } = req.body
     if(!email || !password){
         return next(new AppError('All fields are required', 400))
@@ -60,7 +60,7 @@ const login = async (req,res) => {
     }).select('+password')
 
     if(!user || !user.comparePassword(password)){  //todo
-        return next(AppError('Email or password do not match', 400))
+        return next(new AppError('Email or password do not match', 400))
     }
 
     const token = await user.generateJWTToken()
