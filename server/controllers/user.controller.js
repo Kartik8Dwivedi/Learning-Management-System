@@ -2,7 +2,6 @@ import User from "../model/user.model.js";
 import AppError from "../utils/appError.js";
 
 const cookieOptions = {
-    secure:true,
     maxAge: 7*24*60*60*1000, //* 7 days
     httpOnly: true
 }
@@ -36,6 +35,10 @@ const register = async (req,res, next) => {
 
     //todo: upload user picture
 
+    if(){
+        
+    }
+
     await user.save()
 
     //todo: set JWT token in cookie
@@ -65,7 +68,7 @@ const login = async (req,res,next) => {
 
     const token = await user.generateJWTToken()
     user.password = undefined
-    res.cookie('token', token, cookieOptions)
+    res.cookie('token', token, cookieOptions) 
 
     res.status(201).json({
         success : true,
@@ -86,14 +89,18 @@ const logout = (req,res) => {
     })
 };
 
-const getProfile = (req,res) => {
-    const userId = User.findOne(req,User.id)
-    console.log("object")
-    res.status(200).json({
-      success: true,
-      messgae: "User Details",
-      userId,
-    });
+const getProfile = (req, res) => {
+    try {
+          const user = User.findById(req.user.id);
+
+          res.status(200).json({
+            success: true,
+            message: "User details",
+            user,
+          });
+    } catch (error) {
+        return new AppError(error,400)
+    }
 };
 
 export { login, logout, getProfile, register };

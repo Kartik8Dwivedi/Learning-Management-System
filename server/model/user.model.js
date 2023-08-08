@@ -1,6 +1,8 @@
 import { Schema, model } from 'mongoose'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
+import 'dotenv/config'
+
 
 const userSchema = new Schema({
     fullName : {
@@ -46,13 +48,13 @@ userSchema.pre('save', async function(next){
         return next()
     }
     this.password = await bcrypt.hash(this.password, 10)
+    return next();
 })
-
 userSchema.methods = {
     comparePassword : async function(plainTextPassword) {
         return await bcrypt.compare(plainTextPassword, this.password);
     },
-    generateJWTToken : async function() {
+    generateJWTToken : function() {
         return jwt.sign(
             { id:this._id, role:this.role, email:this.email, subscrption:this.subscrption },
             process.env.JWT_SECRET,

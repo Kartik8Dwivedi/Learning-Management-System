@@ -7,9 +7,10 @@ import connectToDB from "./config/dbConnection.js";
 
 const app = express();
 
+app.use(express.json());
+
 connectToDB();
 
-app.use(json());
 app.use(
   cors({
     origin: [process.env.FRONTEND_URL],
