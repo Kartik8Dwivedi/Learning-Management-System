@@ -2,6 +2,8 @@ import User from "../model/user.model.js";
 import AppError from "../utils/appError.js";
 import cloudinary from 'cloudinary'
 import fs from 'fs/promises'
+import crypto from 'crypto'
+import sendEmail from '../utils/sendEmail.js'
 
 const cookieOptions = {
     maxAge: 7*24*60*60*1000, //* 7 days
@@ -9,7 +11,8 @@ const cookieOptions = {
 }
 
 const register = async (req,res, next) => {
-    const { fullName, email,password } = req.body
+    console.log(req.body)
+    const { fullName,email,password } = req.body
 
     if(!fullName || !password || !email){
         return next(new AppError('All fields are required', 400))
@@ -34,9 +37,9 @@ const register = async (req,res, next) => {
     if(!user){
         return next(new AppError('User registeration failed, please try again', 400))
     }
+    console.log(user.file)
 
     //todo: upload user picture
-    console.log('File Details >', JSON.stringify(req.file))
     if(req.file){
         try {
             const result = await cloudinary.v2.uploader.upload(req.file.path, {
@@ -50,7 +53,7 @@ const register = async (req,res, next) => {
                 user.avatar.public_id = result.public_id;
                 user.avatar.secure_url = result.secure_url;
                 // * remove the file from local server
-                // fs.rm(`uploads/${req.file.filename}`)
+                fs.rm(`uploads/${req.file.filename}`)
             }
         } catch (error) {
             return next(new AppError(error.message || 'File not uploaded, please try again', 400))
@@ -61,7 +64,9 @@ const register = async (req,res, next) => {
 
     //todo: set JWT token in cookie
 
+    const token = await user.generateJWTToken()
     user.password = undefined
+    res.cookie('token', token, cookieOptions)
 
     res.status(200).json({
         success : true,
@@ -121,4 +126,63 @@ const getProfile = (req, res) => {
     }
 };
 
-export { login, logout, getProfile, register };
+const forgotPassword = async (req,res,next) => {
+    const { email } = req.body;
+    if(!email){
+        return next(
+            new AppError('Email is required', 400)
+        )
+    }
+    const user = await User.findOne({email})
+    if(!user){
+        return next(
+            new AppError('Email is not registered', 400)
+        )
+    }
+    const resetToken = await user.generatePasswordToken();
+
+    await user.save();
+
+    const resetPasswordUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+    const subject = 'Reset Password';
+    const message = `You can reset your password by clicking <a href=${resetPasswordUrl} target="_blank">Reset your password</a>\nIf the above link does not work for some reaseon then copy paste this link in new tab ${resetPasswordUrl}. If you have not requested this, kindly ignore`;
+    try {
+        await sendEmail(email,subject,message) // nodemailer > utils/sendEmail.js
+        res.status(200).json({
+            success:true,
+            message:`Reset password token has been sent to ${email} successfully`
+        })
+    } catch (error) {
+        user.forgotPasswordExpiry = undefined;
+        user.forgotPasswordToken = undefined;
+        await user.save()
+        return next(new AppError(e.message,500))
+    }
+}
+
+const resetPassword = async (req,res,next) => {
+    const { resetToken } = req.params;
+    const { password } = req.body;
+    
+    const forgotPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+    const user = await User.findOne({
+        forgotPasswordToken,
+        forgotPasswordExpiry: {$gt: Date.now()} // $gt = greater than
+    })
+    if(!user){
+        return next(new AppError('Token is invalid or expired, please try again', 400))
+    }
+
+    user.password = password;
+    user.forgotPasswordExpiry = undefined;
+    user.forgotPasswordToken = undefined;
+
+    await user.save()
+
+    req.status(200).json({ 
+        success: true,
+        message: 'Password changed successfully'
+    })
+}
+
+export { login, logout, getProfile, register, resetPassword, forgotPassword };
