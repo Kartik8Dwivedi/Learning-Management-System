@@ -65,13 +65,15 @@ userSchema.methods = {
         )
     },
     generatePasswordToken: async function(){
+        // generate random token
         const resetToken = crypto.randomBytes(20).toString('hex')
-
+        // hash and set to resetPasswordToken field
         this.forgotPasswordToken = crypto
             .createHash('sha256')
             .update(resetToken)
             .digest('hex')
         ;
+        // set token expiry to 15 mins
         this.forgotPasswordExpiry = Date.now() + 15*60*1000 // 15 mins from now
         return resetToken;
     }

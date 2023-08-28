@@ -22,3 +22,4 @@ let info = await transporter.sendMail({
 console.log("Message sent: %s", info.messageId)
 
 }
+export default sendEmail;
