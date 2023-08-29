@@ -26,4 +26,12 @@ const isLoggedIn = (req, res, next) => {
   next();
 };
 
+export const authorizedRoles = (...roles) => (req,res,next) => {
+  const currentRole = req.user.role;
+  if(!roles.includes(currentRole)) {
+    return next(new AppError("You are not authorized to perform this action", 403));
+  }
+  next();
+}
+
 export default isLoggedIn
