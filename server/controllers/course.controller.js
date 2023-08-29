@@ -115,4 +115,45 @@ const deleteCourse = async (req, res, next) => {
     }
 }
 
-export { getAllCourses,getLecturesByCourseId, createCourse, updateCourse, deleteCourse };
+const addLectureToCourseById = async (req, res, next) => {
+    try {
+        const { courseID } = req.params;
+        const { title, description } = req.body;
+        if(!title || !description) {
+            return next(new AppError("All fields are required", 400));
+        }
+        const course = await Course.findById(courseID);
+        if(!course) {
+            return next(new AppError("No course found with this ID", 404));
+        }
+        const lectureData = {
+            title,
+            description,
+            lecture:{}
+        }
+        if(req.file){
+            const result = await cloudinary.v2.uploader.upload(req.file.path, {
+                folder: 'lms',
+            });
+            if(result){
+                lectureData.lecture = {
+                    public_id: result.public_id,
+                    secure_url: result.secure_url,
+                }
+            }
+            fs.rm('uploads/${req.file.filename}')
+        }
+        course.lectures.push(lectureData);
+        course.numbersOfLectures = course.lectures.length;
+        await course.save();
+        res.status(201).json({
+            success: true,
+            message: "Lecture added to the course",
+            course,
+        });
+    } catch (error) {
+      return next(new AppError(error.message, 500));
+    }
+}
+
+export { getAllCourses,getLecturesByCourseId, createCourse, updateCourse, deleteCourse, addLectureToCourseById };
