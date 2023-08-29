@@ -1,6 +1,6 @@
-import {model, schema} from 'mongoose';
+import {model, Schema} from 'mongoose';
 
-const CourseSchema = new schema({
+const CourseSchema = new Schema({
   title: {
     type: String,
     required: [true, 'Please enter course title'],
