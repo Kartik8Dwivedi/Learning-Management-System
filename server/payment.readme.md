@@ -1,0 +1,1 @@
+/razorpay-key-----> Client------> /subscribe------> payment Gateway(Razorpay) ------> verify
