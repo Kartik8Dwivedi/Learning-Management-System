@@ -32,6 +32,15 @@ export const authorizedRoles = (...roles) => (req,res,next) => {
     return next(new AppError("You are not authorized to perform this action", 403));
   }
   next();
-}
+};
+
+export const authorizedSubscriber = (req,res,next) => {
+  const subscriptionStatus = req.user.subscription.status;
+  const currentRole = req.user.role;
+  if(currentRole === 'ADMIN'&& subscriptionStatus !== 'active') {
+    return next(new AppError("You are not authorized to perform this action", 403));
+  }
+  next();
+};
 
 export default isLoggedIn
