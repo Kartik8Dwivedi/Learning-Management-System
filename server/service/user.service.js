@@ -13,9 +13,6 @@ const createUser = async ({fullName, email, password, avatarFile}) => {
       },
     });
 
-    if (!user) {
-      new Error("User registeration failed, please try again", 400);
-    }
 
     //todo: upload user picture
     if (avatarFile) {
@@ -46,7 +43,22 @@ const createUser = async ({fullName, email, password, avatarFile}) => {
   }
 };
 
-
-export {
-    createUser,
+const loginUser = async ({email, password}) => {
+    try {
+    const user = await User.findOne({ email }).select("+password");
+    if (!user || !(await user.comparePassword(password))) {
+      return res.status(400).json({
+        message: "Invalid Credentials",
+        data: {},
+        success: false,
+        err: "Email not found or password is incorrect",
+      });
+    }
+    return user;
+    } catch (error) {
+        throw error;
+    }
 }
+
+
+export { createUser, loginUser };

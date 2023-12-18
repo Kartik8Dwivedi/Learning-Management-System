@@ -4,7 +4,7 @@ import cloudinary from "cloudinary";
 import fs from "fs/promises";
 import crypto from "crypto";
 import sendEmail from "../utils/sendEmail.js";
-import { createUser } from "../service/user.service.js";
+import { createUser, loginUser } from "../service/user.service.js";
 
 const cookieOptions = {
   maxAge: 7 * 24 * 60 * 60 * 1000, //* 7 days
@@ -23,7 +23,6 @@ const register = async (req, res) => {
     if (userExists) {
       new Error("Email already exists", 400);
     }
-
     // Create user
     const user = await createUser({ fullName, email, password, avatarFile });
 
@@ -52,19 +51,21 @@ const register = async (req, res) => {
 
 const login = async (req, res) => {
   try {
+    // checking the required fields
     const { email, password } = req.body;
-    if (!email || !password) {
-      throw new Error("All fields are required", 400);
+    console.log(`email: ${email}, password: ${password}`)
+    if (!password || !email) {
+          return res.status(400).json({
+            message: "Something went wrong",
+            data: {},
+            success: false,
+            err: "Email and Password are mandatory",
+          });
     }
+    // Login user
+    const user = await loginUser({ email, password });
 
-    const user = await User.findOne({
-      email,
-    }).select("+password");
-
-    if (!user || !user.comparePassword(password)) {
-      throw new Error("Email or password do not match", 400);
-    }
-
+    // Set JWT token in cookie
     const token = await user.generateJWTToken();
     user.password = undefined;
     res.cookie("token", token, cookieOptions);
@@ -75,16 +76,13 @@ const login = async (req, res) => {
       user,
     });
   } catch (error) {
-    console.log("Error.name::::::", error.name)
-    console.log("Error in login", error)
+
     let statusCode = 500;
-    if (error.name === "ValidationError" || error.name === "MongoServerError")
-      statusCode = 400;
     return res.status(statusCode).json({
       message: "Unable to login",
       data: {},
       success: false,
-      err: error.message,
+      err: error,
     });
   }
 };
@@ -96,22 +94,30 @@ const logout = (req, res) => {
     httpOnly: true,
   });
   res.status(200).json({
-    success: true,
     message: "User logged out successfully",
+    data: {},
+    success: true,
+    err: null,
   });
 };
 
-const getProfile = (req, res) => {
+const getProfile = async (req, res) => {
   try {
-    const user = User.findById(req.user.id);
-
+    const user = await User.findById(req.user.id);
     res.status(200).json({
-      success: true,
-      message: "User details",
-      user,
+        message: "User details",
+        success: true,
+        data: user,
+        err: null
     });
   } catch (error) {
-    return new AppError(error, 400);
+    let statusCode = 500;
+    return res.status(statusCode).json({
+      message: "Unable to get user details",
+      data: {},
+      success: false,
+      err: error,
+    });
   }
 };
 

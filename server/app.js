@@ -7,11 +7,14 @@ import paymentRoutes from "./routes/payment.routes.js";
 import errorMiddleware from "./middlewares/error.middleware.js";
 import connectToDB from "./config/dbConnection.js";
 import morgan from "morgan";
+import bodyParser from "body-parser";
 
 const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
 connectToDB();
 

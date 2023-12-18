@@ -4,8 +4,6 @@ import JWT from 'jsonwebtoken'
 const isLoggedIn = (req, res, next) => {
   // verify token
   const token = (req.cookies && req.cookies.token) || null;
-  console.log(token)
-
   if (!token) {
     return res.status(400).json({
       success: false,
@@ -22,7 +20,6 @@ const isLoggedIn = (req, res, next) => {
       message: error.message,
     });
   }
-
   next();
 };
 
