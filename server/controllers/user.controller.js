@@ -1,10 +1,13 @@
 import User from "../model/user.model.js";
 import AppError from "../utils/appError.js";
-import cloudinary from "cloudinary";
 import fs from "fs/promises";
 import crypto from "crypto";
-import sendEmail from "../utils/sendEmail.js";
-import { createUser, loginUser } from "../service/user.service.js";
+
+import {
+  createUser,
+  loginUser,
+  mailResetToken,
+} from "../service/user.service.js";
 
 const cookieOptions = {
   maxAge: 7 * 24 * 60 * 60 * 1000, //* 7 days
@@ -24,7 +27,7 @@ const register = async (req, res) => {
       new Error("Email already exists", 400);
     }
     // Create user
-    const user = await createUser({ fullName, email, password, avatarFile });
+    const user = await createUser({ fullName, email, password, avatarFile, path: req.file });
 
     // Set JWT token in cookie
     const token = await user.generateJWTToken();
@@ -53,14 +56,14 @@ const login = async (req, res) => {
   try {
     // checking the required fields
     const { email, password } = req.body;
-    console.log(`email: ${email}, password: ${password}`)
+    console.log(`email: ${email}, password: ${password}`);
     if (!password || !email) {
-          return res.status(400).json({
-            message: "Something went wrong",
-            data: {},
-            success: false,
-            err: "Email and Password are mandatory",
-          });
+      return res.status(400).json({
+        message: "Something went wrong",
+        data: {},
+        success: false,
+        err: "Email and Password are mandatory",
+      });
     }
     // Login user
     const user = await loginUser({ email, password });
@@ -76,7 +79,6 @@ const login = async (req, res) => {
       user,
     });
   } catch (error) {
-
     let statusCode = 500;
     return res.status(statusCode).json({
       message: "Unable to login",
@@ -105,10 +107,10 @@ const getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
     res.status(200).json({
-        message: "User details",
-        success: true,
-        data: user,
-        err: null
+      message: "User details",
+      success: true,
+      data: user,
+      err: null,
     });
   } catch (error) {
     let statusCode = 500;
@@ -121,39 +123,39 @@ const getProfile = async (req, res) => {
   }
 };
 
-const forgotPassword = async (req, res, next) => {
-  // take email from req.body
-  const { email } = req.body;
-  if (!email) {
-    return next(new AppError("Email is required", 400));
-  }
-  // find user by email
-  const user = await User.findOne({ email });
-  if (!user) {
-    return next(new AppError("Email is not registered", 400));
-  }
-  // generate reset token
-  const resetToken = await user.generatePasswordToken();
-  // save reset token and expiry in db
-  await user.save();
-  // send email to user with reset token
-  const resetPasswordUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
-  const subject = "Reset Password";
-  const message = `You can reset your password by clicking <a href=${resetPasswordUrl} target="_blank">Reset your password</a>\nIf the above link does not work for some reaseon then copy paste this link in new tab ${resetPasswordUrl}. If you have not requested this, kindly ignore`;
-  // send email
+const forgotPassword = async (req, res) => {
   try {
-    await sendEmail(email, subject, message); // nodemailer > utils/sendEmail.js
+    // take email from req.body
+    const { email } = req.body;
+    if (!email) {
+      throw new Error("Email is required", 400);
+    }
+    // find user by email
+    const user = await User.findOne({ email });
+    if (!user) {
+      throw new Error("Email is not registered", 400);
+    }
+
+    // mail reset token
+    const response = await mailResetToken(user, email);
+
+    // send response
+    if(response)
     res.status(200).json({
+      message: `Reset password link has been sent to ${email} successfully`,
+      data: {},
       success: true,
-      message: `Reset password token has been sent to ${email} successfully`,
+      err: null,
     });
   } catch (error) {
-    // if error then remove reset token and expiry from db
-    user.forgotPasswordExpiry = undefined;
-    user.forgotPasswordToken = undefined;
-    // save user
-    await user.save();
-    return next(new AppError(e.message, 500));
+    console.log(error)
+    let statusCode = 500;
+    return res.status(statusCode).json({
+      message: "Unable to send reset password link",
+      data: {},
+      success: false,
+      err: error,
+    });
   }
 };
 
@@ -186,8 +188,10 @@ const resetPassword = async (req, res, next) => {
   await user.save();
 
   req.status(200).json({
-    success: true,
     message: "Password changed successfully",
+    data: user,
+    success: true,
+    err: null,
   });
 };
 
@@ -216,8 +220,10 @@ const changePassword = async (req, res, next) => {
   // send response
   user.password = undefined;
   res.status(200).json({
-    success: true,
     message: "Password changed successfully",
+    data: user,
+    success: true,
+    err: null,
   });
 };
 
