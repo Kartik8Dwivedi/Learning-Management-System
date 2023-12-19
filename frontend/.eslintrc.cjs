@@ -8,7 +8,7 @@ module.exports = {
   ],
   ignorePatterns: ["dist", ".eslintrc.cjs"],
   parser: "@typescript-eslint/parser",
-  plugins: ["react-refresh", "simple-import-sort", "@typescript-eslint"],
+  plugins: ["react-refresh", "simple-import-sort"],
   rules: {
     "simple-import-sort/imports": "error",
     "react-refresh/only-export-components": [
