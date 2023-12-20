@@ -1,15 +1,32 @@
 import React, { ReactNode } from "react";
-import Footer from "../components/Footer";
-
 import { FiMenu } from "react-icons/fi";
 import { AiFillCloseCircle } from "react-icons/ai";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "../redux/store";
+import Footer from "../components/Footer";
 
 interface HomeLayoutProps {
   children: ReactNode;
 }
 
 const HomeLayout: React.FC<HomeLayoutProps> = ({ children }) => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const isLoggedIn: boolean = useSelector(
+    (state: RootState) => state?.auth?.isLoggedIn
+  );
+  const role: string | undefined = useSelector(
+    (state: RootState) => state?.auth?.role
+  );
+
+  const onLogout = () => {
+    // e.preventDefault();
+    // TODO: dispatch logout action
+    navigate("/");
+  };
+
   const changeWidth = () => {
     const drawer = document.querySelector(".drawer-side") as HTMLElement;
     drawer?.classList.toggle("w-0", false);
@@ -59,6 +76,11 @@ const HomeLayout: React.FC<HomeLayoutProps> = ({ children }) => {
                   Home{" "}
                 </Link>
               </li>
+              {isLoggedIn && role === "ADMIN" && (
+                <li>
+                  <Link to={"/admin/dashboard"}> Admin Dashboard</Link>
+                </li>
+              )}
               <li>
                 <Link
                   to={"/courses"}
@@ -86,11 +108,36 @@ const HomeLayout: React.FC<HomeLayoutProps> = ({ children }) => {
                   Contact Us{" "}
                 </Link>
               </li>
+              {!isLoggedIn ? (
+                <li className="absolute bottom-4 w-[90%]">
+                  <div className="w-full flex items-center justify-between">
+                    <button className="btn btn-primary w-[50%]">
+                      <Link to={"/login"}>Log In</Link>
+                    </button>
+                    <button className="btn btn-secondary w-[50%]">
+                      <Link to={"/login"}>Sign Up</Link>
+                    </button>
+                  </div>
+                </li>
+              ) : (
+                <li className="absolute bottom-4 w-[90%]">
+                  <div className="w-full flex items-center justify-between">
+                    <button className="btn btn-primary w-[50%]">
+                      <Link to={"/user/profile"}>Profile</Link>
+                    </button>
+                    <button
+                      className="btn btn-secondary w-[50%]"
+                      onClick={onLogout}
+                    >
+                      Logout
+                    </button>
+                  </div>
+                </li>
+              )}
             </ul>
           </div>
         </div>
         {children}
-
         <Footer />
       </div>
     </>
