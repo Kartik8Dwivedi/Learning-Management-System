@@ -1,7 +1,7 @@
 // @ts-nocheck
 // @ts-ignore
 import "./index.css";
-import store from "./redux/store";
+import store from "./redux/store.ts";
 
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";

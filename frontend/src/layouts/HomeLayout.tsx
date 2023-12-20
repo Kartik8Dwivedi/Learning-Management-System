@@ -111,10 +111,10 @@ const HomeLayout: React.FC<HomeLayoutProps> = ({ children }) => {
               {!isLoggedIn ? (
                 <li className="absolute bottom-4 w-[90%]">
                   <div className="w-full flex items-center justify-between">
-                    <button className="btn btn-primary w-[50%]">
+                    <button className="btn btn-sm btn-primary w-[50%]">
                       <Link to={"/login"}>Log In</Link>
                     </button>
-                    <button className="btn btn-secondary w-[50%]">
+                    <button className="btn btn-sm btn-secondary w-[50%]">
                       <Link to={"/login"}>Sign Up</Link>
                     </button>
                   </div>
@@ -122,11 +122,11 @@ const HomeLayout: React.FC<HomeLayoutProps> = ({ children }) => {
               ) : (
                 <li className="absolute bottom-4 w-[90%]">
                   <div className="w-full flex items-center justify-between">
-                    <button className="btn btn-primary w-[50%]">
+                    <button className="btn btn-sm btn-primary w-[50%]">
                       <Link to={"/user/profile"}>Profile</Link>
                     </button>
                     <button
-                      className="btn btn-secondary w-[50%]"
+                      className="btn btn-sm btn-secondary w-[50%]"
                       onClick={onLogout}
                     >
                       Logout
